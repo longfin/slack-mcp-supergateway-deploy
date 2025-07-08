@@ -7,20 +7,14 @@
 프로젝트/
 ├── Dockerfile
 ├── fly.toml
-├── .env (로컬 테스트용)
 └── .dockerignore
 ```
 
-### 2. .env 파일 예시 (로컬 테스트용)
-```bash
-# Slack API 토큰들
-SLACK_BOT_TOKEN=xoxb-your-bot-token
-SLACK_USER_TOKEN=xoxp-your-user-token  
-SLACK_TEAM_ID=your-team-id
-
-# 추가 설정 (선택사항)
-SLACK_LOGGING_LEVEL=info
-```
+### 2. Slack API 토큰 준비
+다음 토큰들이 필요합니다:
+- `SLACK_BOT_TOKEN`: xoxb-로 시작하는 봇 토큰
+- `SLACK_USER_TOKEN`: xoxp-로 시작하는 사용자 토큰  
+- `SLACK_TEAM_ID`: Slack 팀/워크스페이스 ID
 
 ### 3. .dockerignore 파일
 ```
@@ -29,7 +23,7 @@ npm-debug.log*
 .git
 .gitignore
 README.md
-.env.local
+.env*
 .nyc_output
 coverage
 .vscode
@@ -88,8 +82,12 @@ curl https://slack-mcp-server.fly.dev/health
 # 이미지 빌드
 docker build -t slack-mcp-server .
 
-# 로컬 실행 (.env 파일 사용)
-docker run -p 8000:8000 --env-file .env slack-mcp-server
+# 환경변수와 함께 로컬 실행
+docker run -p 8000:8000 \
+  -e SLACK_BOT_TOKEN=xoxb-your-bot-token \
+  -e SLACK_USER_TOKEN=xoxp-your-user-token \
+  -e SLACK_TEAM_ID=your-team-id \
+  slack-mcp-server
 
 # 브라우저에서 확인
 # http://localhost:8000/sse
@@ -97,10 +95,14 @@ docker run -p 8000:8000 --env-file .env slack-mcp-server
 
 ### npx로 직접 테스트
 ```bash
-# .env 파일이 있는 디렉토리에서
+# 환경변수 설정 후 실행
+export SLACK_BOT_TOKEN=xoxb-your-bot-token
+export SLACK_USER_TOKEN=xoxp-your-user-token
+export SLACK_TEAM_ID=your-team-id
+
 npx -y supergateway \
   --outputTransport sse \
-  --stdio "npx -y dotenv -e .env -- npx -y @modelcontextprotocol/server-slack" \
+  --stdio "npx -y @modelcontextprotocol/server-slack" \
   --port 8000 \
   --cors \
   --healthEndpoint /health
@@ -196,10 +198,10 @@ flyctl status --all
 
 ## 💡 보안 고려사항
 
-1. **절대 .env 파일을 Git에 커밋하지 마세요**
-2. **모든 민감한 데이터는 flyctl secrets로 관리**
-3. **HTTPS 강제 활성화 (fly.toml에서 설정됨)**
-4. **적절한 CORS 설정**
+1. **모든 민감한 데이터는 flyctl secrets로 관리**
+2. **HTTPS 강제 활성화 (fly.toml에서 설정됨)**
+3. **적절한 CORS 설정**
+4. **환경변수는 컨테이너 런타임에서 자동 주입**
 
 ## 🔄 업데이트 및 유지보수
 
@@ -215,9 +217,13 @@ flyctl releases rollback <version>
 
 ## 📝 원본 명령어
 
-이 설정은 다음 명령어를 기반으로 만들어졌습니다:
+이 설정은 다음 명령어를 간소화한 버전입니다:
 ```bash
+# 원본 (로컬용)
 npx -y supergateway --outputTransport sse --stdio "npx -y dotenv -e .env -- npx -y @modelcontextprotocol/server-slack"
+
+# 배포용 (환경변수 자동 주입)
+npx -y supergateway --outputTransport sse --stdio "npx -y @modelcontextprotocol/server-slack"
 ```
 
 ## 🔗 관련 링크
